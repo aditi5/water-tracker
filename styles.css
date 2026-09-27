@@ -105,3 +105,9 @@ h1{margin:2px 0 0;font-size:26px;letter-spacing:-.3px}
 .tab.active .tab-ic{filter:none;opacity:1}
 
 .toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 86px);transform:translateX(-50%);background:#0b2a4ae6;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10;animation:fadein .2s ease}
+
+.note{background:#fff4e0;color:#7a4a00;border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.4;margin:8px 0}
+.note.ok{background:#e4f7ea;color:#1d6b35}
+.code{width:100%;box-sizing:border-box;margin:6px 0 8px;padding:10px;border-radius:12px;border:1px solid var(--line);background:#f6faff;font:12px/1.35 ui-monospace,Menlo,monospace;color:#234;resize:none;word-break:break-all}
+.wide{width:100%;margin-top:8px}
+.btn-primary:disabled{opacity:.45;box-shadow:none}

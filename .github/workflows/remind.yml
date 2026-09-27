@@ -1,0 +1,39 @@
+name: Water reminder push
+
+on:
+  schedule:
+    # 09:00, 11:00, 13:00, 15:00, 17:00, 19:00, 21:00 IST (= UTC+5:30).
+    # GitHub may start scheduled runs several minutes late.
+    - cron: '30 3,5,7,9,11,13,15 * * *'
+  workflow_dispatch:
+    inputs:
+      body:
+        description: 'Optional custom message text'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: water-reminder
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pywebpush
+        run: pip install --quiet -r scripts/requirements.txt
+      - name: Send push
+        env:
+          PUSH_SUBSCRIPTION: ${{ secrets.PUSH_SUBSCRIPTION }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_BODY: ${{ github.event.inputs.body }}
+        run: python scripts/send_push.py

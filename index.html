@@ -112,11 +112,27 @@
           <button type="submit" class="btn-small">Add time</button>
         </form>
         <button class="btn-link" id="resetTimes">Reset to every 2 h, 9:00–21:00</button>
+        <p class="hint">Note: push notifications currently arrive at fixed times, every 2 h from 9 am to 9 pm. Changing times here only changes the calendar reminders (fallback) for now.</p>
+      </div>
+
+      <div class="card" id="pushCard">
+        <h2>Notifications 🔔</h2>
+        <p class="hint">Get a “Drink water 💧” notification with sound, even when the app is closed. Sent every 2 h, 9 am–9 pm.</p>
+        <p class="note hidden" id="pushNote"></p>
+        <button class="btn-primary small" id="pushEnable">🔔 Enable notifications</button>
+        <div class="hidden" id="pushSubBox">
+          <label class="hint" for="pushCode">Notification code (send this to set up reminders):</label>
+          <textarea id="pushCode" class="code" readonly rows="5" spellcheck="false"></textarea>
+          <button class="btn-small wide" id="pushCopy">📋 Copy notification code</button>
+          <p class="hint" id="pushCopyNote"></p>
+        </div>
+        <button class="btn-ghost wide hidden" id="pushTest">Send test notification from this phone</button>
+        <p class="hint" id="pushStatus"></p>
       </div>
 
       <div class="card">
-        <h2>Calendar reminders</h2>
-        <p class="hint">iPhone home-screen apps can't send scheduled notifications on their own, so add your reminder times to Calendar as daily repeating events with an alert.</p>
+        <h2>Calendar reminders (fallback)</h2>
+        <p class="hint">Backup option if notifications don't work: add your reminder times to Calendar as daily repeating events with an alert.</p>
         <button class="btn-primary small" id="icsBtn">📅 Add reminders to my calendar</button>
         <p class="hint" id="icsNote"></p>
       </div>

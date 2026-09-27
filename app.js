@@ -322,6 +322,98 @@
     delete state.days[dayKey()]; save(); render();
   });
 
+  // ---------- Web Push ----------
+  // Public half of the VAPID key pair; the private half lives only in the GitHub secret VAPID_PRIVATE_KEY.
+  var VAPID_PUBLIC_KEY = 'BGDcnzFah8FFLbpLGWpMCJRh4Edjo0eu_dk-aurJGJGeEcSCGcgHBA0PdNkVaSPNrt2xZPH_j7vqRq4Xx5DjKYw';
+  var COPIED_KEY = 'water.pushCopiedEndpoint';
+  function isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isStandalone() { return window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; }
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  function b64ToBytes(b64) {
+    var s = (b64 + '==='.slice(0, (4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(s), out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function pushNote(msg, ok) {
+    var n = $('pushNote'); n.textContent = msg || ''; n.classList.toggle('hidden', !msg); n.classList.toggle('ok', !!ok);
+  }
+  function showSub(sub) {
+    var json = JSON.stringify(sub);
+    $('pushCode').value = json;
+    $('pushSubBox').classList.remove('hidden');
+    $('pushTest').classList.remove('hidden');
+    $('pushEnable').textContent = '🔄 Re-check notifications';
+    var copied = null; try { copied = localStorage.getItem(COPIED_KEY); } catch (e) {}
+    $('pushCopyNote').textContent = copied === sub.endpoint ? 'Code copied earlier. It only changes if you re-add the app to your Home Screen.'
+      : copied ? 'Your code has changed since you last copied it: copy it again and send the new one.' : 'Copy this code and send it so reminders can be set up.';
+    pushNote('Notifications are on for this phone ✅', true);
+  }
+  function initPush() {
+    if (!isIOS() || !isStandalone()) {
+      $('pushEnable').disabled = true;
+      pushNote(isIOS() ? 'To turn on notifications, open Water from its Home Screen icon (not in Safari), then come back to Settings.'
+        : 'Notifications are set up for the iPhone Home Screen app. On your iPhone, open Water from its Home Screen icon and enable them there.');
+      return;
+    }
+    if (!pushSupported()) {
+      $('pushEnable').disabled = true;
+      pushNote('This iPhone doesn\'t support web notifications. Update to iOS 16.4 or later, then open the app from the Home Screen icon again.');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      pushNote('Notifications are blocked. Turn them on in iPhone Settings > Notifications > Water, then tap Enable again.');
+    }
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) { if (sub && Notification.permission === 'granted') showSub(sub); })
+      .catch(function () {});
+  }
+  function enablePush() {
+    if (!pushSupported()) return;
+    $('pushStatus').textContent = '';
+    // Ask for permission right inside the tap handler; iOS only shows the prompt for a direct user gesture.
+    var perm = Notification.requestPermission();
+    Promise.resolve(perm).then(function (p) {
+      if (p !== 'granted') {
+        pushNote(p === 'denied' ? 'Notifications are blocked. Turn them on in iPhone Settings > Notifications > Water, then tap Enable again.'
+          : 'Permission not given yet. Tap Enable notifications and choose Allow.');
+        throw null;
+      }
+      return navigator.serviceWorker.register('sw.js').then(function () { return navigator.serviceWorker.ready; });
+    }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (sub) {
+        return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
+      });
+    }).then(function (sub) { showSub(sub); toast('Notifications enabled 🔔'); })
+      .catch(function (e) { if (e) { $('pushStatus').textContent = 'Could not enable notifications: ' + (e.message || e); } });
+  }
+  function copyCode() {
+    var ta = $('pushCode'), text = ta.value;
+    function done() {
+      try { localStorage.setItem(COPIED_KEY, JSON.parse(text).endpoint); } catch (e) {}
+      $('pushCopyNote').textContent = 'Copied ✅ Now paste it in a message and send it.';
+      toast('Notification code copied');
+    }
+    function fallback() {
+      ta.focus(); ta.select(); ta.setSelectionRange(0, text.length);
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      if (ok) done(); else $('pushCopyNote').textContent = 'Select all the text in the box above and copy it manually.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  }
+  function testPush() {
+    if (!pushSupported() || Notification.permission !== 'granted') { $('pushStatus').textContent = 'Enable notifications first.'; return; }
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.showNotification('Drink water 💧', { body: 'Test notification: it works! 🎉', icon: 'icons/icon-192.png', tag: 'water-test', renotify: true, data: { url: reg.scope } });
+    }).then(function () { $('pushStatus').textContent = 'Test notification sent. If you didn\'t see it, check iPhone Settings > Notifications > Water.'; })
+      .catch(function (e) { $('pushStatus').textContent = 'Test failed: ' + (e.message || e); });
+  }
+  $('pushEnable').addEventListener('click', enablePush);
+  $('pushCopy').addEventListener('click', copyCode);
+  $('pushTest').addEventListener('click', testPush);
+  $('pushCode').addEventListener('focus', function () { this.select(); });
+
   // Re-render at IST midnight / when returning to app.
   function tick() {
     if (dayKey() !== renderedDay) { renderedDay = dayKey(); render(); } else { renderToday(); checkNudge(); }
@@ -330,6 +422,7 @@
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { state = load(); tick(); render(); } });
 
   render();
+  initPush();
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
