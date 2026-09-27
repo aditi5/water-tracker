@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b3d6b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Water">
+<meta name="description" content="Aditi's personal water reminder">
+<title>Water 💧</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div>
+      <p class="hello" id="hello">Hi Aditi</p>
+      <h1 id="dateLabel">Today</h1>
+    </div>
+    <div class="streak-pill" id="streakPill" title="Streak">🔥 <span id="streakTop">0</span></div>
+  </header>
+
+  <div class="nudge hidden" id="nudge" role="status">
+    <span class="nudge-drop">💧</span>
+    <span id="nudgeText">It's been a while since your last glass. A few sips?</span>
+    <button class="nudge-close" id="nudgeClose" aria-label="Dismiss">×</button>
+  </div>
+
+  <main>
+    <!-- TODAY -->
+    <section class="view active" id="view-today" aria-label="Today">
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 220 220" aria-hidden="true">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#7fd3ff"/>
+              <stop offset="100%" stop-color="#2f8cff"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="110" cy="110" r="94"/>
+          <circle class="ring-fg" id="ringFg" cx="110" cy="110" r="94"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-ml"><span id="mlNow">0</span><small> ml</small></div>
+          <div class="ring-goal">of <span id="mlGoal">2000</span> ml</div>
+          <div class="ring-glasses" id="glassesText">0 / 8 glasses</div>
+        </div>
+      </div>
+      <p class="status" id="statusText">Let's get started 🌊</p>
+
+      <button class="btn-primary" id="addGlass">+1 glass <span id="glassSizeLabel">(250 ml)</span></button>
+
+      <div class="row-actions">
+        <button class="btn-ghost" id="undoBtn">↶ Undo</button>
+        <button class="btn-ghost" id="customToggle">＋ Custom amount</button>
+      </div>
+
+      <form class="custom hidden" id="customForm">
+        <input type="number" inputmode="numeric" id="customMl" min="10" max="3000" step="10" placeholder="ml" aria-label="Custom amount in ml">
+        <button type="submit" class="btn-small">Add</button>
+      </form>
+
+      <div class="card">
+        <h2>Today's log</h2>
+        <ul class="log" id="logList"></ul>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" id="view-history" aria-label="History">
+      <div class="stats">
+        <div class="stat"><div class="stat-num" id="streakNum">0</div><div class="stat-lbl">day streak</div></div>
+        <div class="stat"><div class="stat-num" id="avgNum">0</div><div class="stat-lbl">avg ml (7d)</div></div>
+        <div class="stat"><div class="stat-num" id="hitNum">0/7</div><div class="stat-lbl">goals hit</div></div>
+      </div>
+      <div class="card">
+        <h2>Last 7 days</h2>
+        <div class="chart" id="chart"></div>
+        <p class="hint">Dashed line = daily goal</p>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings" aria-label="Settings">
+      <div class="card">
+        <h2>Daily goal</h2>
+        <div class="seg" role="tablist">
+          <button class="seg-btn" data-unit="glasses" id="unitGlasses">Glasses</button>
+          <button class="seg-btn" data-unit="ml" id="unitMl">ml</button>
+        </div>
+        <label class="field">
+          <span id="goalLabel">Goal (glasses)</span>
+          <input type="number" inputmode="numeric" id="goalInput" min="1">
+        </label>
+        <label class="field">
+          <span>Glass size (ml)</span>
+          <input type="number" inputmode="numeric" id="glassInput" min="50" max="1000" step="10">
+        </label>
+        <p class="hint" id="goalSummary"></p>
+      </div>
+
+      <div class="card">
+        <h2>Reminder times</h2>
+        <ul class="times" id="timesList"></ul>
+        <form class="add-time" id="addTimeForm">
+          <input type="time" id="newTime" value="10:30" aria-label="New reminder time">
+          <button type="submit" class="btn-small">Add time</button>
+        </form>
+        <button class="btn-link" id="resetTimes">Reset to every 2 h, 9:00–21:00</button>
+      </div>
+
+      <div class="card">
+        <h2>Calendar reminders</h2>
+        <p class="hint">iPhone home-screen apps can't send scheduled notifications on their own, so add your reminder times to Calendar as daily repeating events with an alert.</p>
+        <button class="btn-primary small" id="icsBtn">📅 Add reminders to my calendar</button>
+        <p class="hint" id="icsNote"></p>
+      </div>
+
+      <div class="card">
+        <h2>Data</h2>
+        <p class="hint">Everything is stored only on this device.</p>
+        <button class="btn-link danger" id="clearToday">Clear today's log</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-view="today"><span class="tab-ic">💧</span>Today</button>
+    <button class="tab" data-view="history"><span class="tab-ic">📊</span>History</button>
+    <button class="tab" data-view="settings"><span class="tab-ic">⚙️</span>Settings</button>
+  </nav>
+  <div class="toast hidden" id="toast"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
